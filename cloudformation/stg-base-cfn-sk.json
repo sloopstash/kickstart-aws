@@ -6,11 +6,6 @@
     "Product":{"Description":"CRM"}
   },
   "Parameters":{
-    "STGVPCCIDR":{
-      "Type":"String",
-      "Default":"10.2.0.0/16",
-      "Description":"Enter CRM STG VPC network range."
-    },
     "STGSTTBKTPrefix":{
       "Type":"String",
       "Description":"Enter CRM STG S3 STT BKT prefix."
