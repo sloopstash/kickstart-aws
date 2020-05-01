@@ -226,7 +226,7 @@
     },
     "STGAppSN2RTTAssoc":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
-      "DependsOn":["STGVPC","STGRTTPVT"],
+      "DependsOn":["STGVPC","STGRTTPVT","STGAppSN2"],
       "Properties":{
         "RouteTableId":{"Ref":"STGRTTPVT"},
         "SubnetId":{"Ref":"STGAppSN2"}
@@ -249,7 +249,7 @@
     },
     "STGRedisSN1RTTAssoc":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
-      "DependsOn":["STGVPC","STGRTTPVT"],
+      "DependsOn":["STGVPC","STGRTTPVT","STGRedisSN1"],
       "Properties":{
         "RouteTableId":{"Ref":"STGRTTPVT"},
         "SubnetId":{"Ref":"STGRedisSN1"}
@@ -272,7 +272,7 @@
     },
     "STGRedisSN2PVTRTTAssoc":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
-      "DependsOn":["STGVPC","STGRTTPVT"],
+      "DependsOn":["STGVPC","STGRTTPVT","STGRedisSN2"],
       "Properties":{
         "RouteTableId":{"Ref":"STGRTTPVT"},
         "SubnetId":{"Ref":"STGRedisSN2"}
@@ -295,7 +295,7 @@
     },
     "STGNATSN1RTTAssoc":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
-      "DependsOn":["STGVPC","STGRTTPUB"],
+      "DependsOn":["STGVPC","STGRTTPUB","STGNATSN1"],
       "Properties":{
         "RouteTableId":{"Ref":"STGRTTPUB"},
         "SubnetId":{"Ref":"STGNATSN1"}
@@ -318,7 +318,7 @@
     },
     "STGNATSN2RTTAssoc":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
-      "DependsOn":["STGVPC","STGRTTPUB"],
+      "DependsOn":["STGVPC","STGRTTPUB","STGNATSN2"],
       "Properties":{
         "RouteTableId":{"Ref":"STGRTTPUB"},
         "SubnetId":{"Ref":"STGNATSN2"}
@@ -341,7 +341,7 @@
     },
     "STGLBSN1RTTAssoc":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
-      "DependsOn":["STGVPC","STGRTTPUB"],
+      "DependsOn":["STGVPC","STGRTTPUB","STGLBSN1"],
       "Properties":{
         "RouteTableId":{"Ref":"STGRTTPUB"},
         "SubnetId":{"Ref":"STGLBSN1"}
@@ -364,7 +364,7 @@
     },
     "STGLBSN2RTTAssoc":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
-      "DependsOn":["STGVPC","STGRTTPUB"],
+      "DependsOn":["STGVPC","STGRTTPUB","STGLBSN2"],
       "Properties":{
         "RouteTableId":{"Ref":"STGRTTPUB"},
         "SubnetId":{"Ref":"STGLBSN2"}
