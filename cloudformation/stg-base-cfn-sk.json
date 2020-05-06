@@ -28,7 +28,7 @@
       "NATSN1":{"AZ":"us-west-2a","CIDR":"10.2.5.0/24"},
       "NATSN2":{"AZ":"us-west-2b","CIDR":"10.2.6.0/24"},
       "LBSN1":{"AZ":"us-west-2a","CIDR":"10.2.7.0/24"},
-      "LBSN1":{"AZ":"us-west-2b","CIDR":"10.2.8.0/24"}
+      "LBSN2":{"AZ":"us-west-2b","CIDR":"10.2.8.0/24"}
     }
   },
   "Conditions":{
@@ -505,10 +505,10 @@
               "Sid":001,
               "Effect":"Allow",
               "Principal":{
-                "CanonicalUser":{"Ref":"STGCFSTTOAI"}
+                "CanonicalUser":{"Fn::GetAtt": ["STGCFSTTOAI","S3CanonicalUserId"]}
               },
               "Action":["s3:GetObject"],
-              "Resource":{"Fn::Join":["-",["arn:aws:s3:::",{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt/*"]]},
+              "Resource":{"Fn::Join":["",["arn:aws:s3:::",{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},"/*"]]},
             }
           ]
         }
