@@ -508,7 +508,7 @@
                 "CanonicalUser":{"Fn::GetAtt": ["STGCFSTTOAI","S3CanonicalUserId"]}
               },
               "Action":["s3:GetObject"],
-              "Resource":{"Fn::Join":["",["arn:aws:s3:::",{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},"/*"]]},
+              "Resource":{"Fn::Join":["",["arn:aws:s3:::",{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},"/*"]]}
             }
           ]
         }
@@ -551,7 +551,7 @@
           "Enabled":true,
           "HttpVersion":"http2",
           "IPV6Enabled":false,
-          "PriceClass":"PriceClass_200"
+          "PriceClass":"PriceClass_All"
         },
         "Tags":[
           {"Key":"Name","Value":"STG-CF-STT-DST"},
