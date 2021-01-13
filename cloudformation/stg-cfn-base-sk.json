@@ -17,6 +17,10 @@
     "STGS3STTBKTPFX":{
       "Type":"String",
       "Description":"STG S3 Static Bucket Prefix."
+    },
+    "STGEC2KeyPair":{
+      "Type":"String",
+      "Description":"STG EC2 Key Pair."
     }
   },
   "Mappings":{
@@ -29,6 +33,11 @@
       "NATSN2":{"AZ":"us-west-2b","CIDR":"10.2.6.0/24"},
       "LBSN1":{"AZ":"us-west-2a","CIDR":"10.2.7.0/24"},
       "LBSN2":{"AZ":"us-west-2b","CIDR":"10.2.8.0/24"}
+    },
+    "EC2AMICONF":{
+      "App":{"Id":"ami-0a36eb8fadc976275"},
+      "Redis":{"Id":"ami-0a36eb8fadc976275"},
+      "NAT":{"Id":"ami-009816cdbb1e74ceb"}
     }
   },
   "Conditions":{
@@ -52,10 +61,7 @@
           ]
         },
         "ManagedPolicyArns":[
-          "arn:aws:iam::aws:policy/AmazonS3FullAccess",
-          "arn:aws:iam::aws:policy/AWSCodeCommitFullAccess",
-          "arn:aws:iam::aws:policy/AWSCodeDeployFullAccess",
-          "arn:aws:iam::aws:policy/AmazonSSMFullAccess"
+          "arn:aws:iam::aws:policy/AmazonS3FullAccess"
         ],
         "Path":"/",
         "RoleName":"STG-IAM-EC2-RL",
@@ -65,6 +71,15 @@
           {"Key":"Region","Value":"us-west-2"},
           {"Key":"Product","Value":"CRM"}
         ]
+      }
+    },
+    "STGIAMEC2RLINSTPF":{
+      "Type":"AWS::IAM::InstanceProfile",
+      "Condition":"CheckENV",
+      "DependsOn":["STGIAMEC2RL"],
+      "Properties":{
+        "Path":"/",
+        "Roles":[{"Ref":"STGIAMEC2RL"}]
       }
     },
     "STGVPC":{
@@ -141,6 +156,16 @@
           {"Key":"Region","Value":"us-west-2"},
           {"Key":"Product","Value":"CRM"}
         ]
+      }
+    },
+    "STGVPCRTTPVTRT1":{
+      "Type":"AWS::EC2::Route",
+      "Condition":"CheckENV",
+      "DependsOn":["STGVPC","STGVPCRTTPVT","STGEC2NATSR1"],
+      "Properties":{
+        "RouteTableId":{"Ref":"STGVPCRTTPVT"},
+        "DestinationCidrBlock":"0.0.0.0/0",
+        "InstanceId":{"Ref":"STGEC2NATSR1"}
       }
     },
     "STGVPCAppSN1":{
@@ -375,8 +400,7 @@
         "GroupDescription":"STG VPC LB Security Group.",
         "GroupName":"STG-VPC-LB-SG",
         "SecurityGroupIngress":[
-          {"IpProtocol":"tcp","FromPort":80,"ToPort":80,"CidrIp":"0.0.0.0/0"},
-          {"IpProtocol":"tcp","FromPort":5000,"ToPort":5000,"CidrIp":"0.0.0.0/0"}
+          {"IpProtocol":"tcp","FromPort":80,"ToPort":80,"CidrIp":"0.0.0.0/0"}
         ],
         "SecurityGroupEgress":[
           {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
@@ -399,7 +423,6 @@
         "GroupName":"STG-VPC-App-SG",
         "SecurityGroupIngress":[
           {"IpProtocol":"tcp","FromPort":22,"ToPort":22,"SourceSecurityGroupId":{"Ref":"STGVPCNATSG"}},
-          {"IpProtocol":"tcp","FromPort":80,"ToPort":80,"SourceSecurityGroupId":{"Ref":"STGVPCLBSG"}},
           {"IpProtocol":"tcp","FromPort":5000,"ToPort":5000,"SourceSecurityGroupId":{"Ref":"STGVPCLBSG"}}
         ],
         "SecurityGroupEgress":[
@@ -484,6 +507,61 @@
         ]
       }
     },
+    "STGS3STTVPCACSSPT":{
+      "Type":"AWS::S3::AccessPoint",
+      "Condition":"CheckENV",
+      "DependsOn":["STGVPC","STGS3STTBKT"],
+      "Properties":{
+        "Bucket":{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},
+        "Name":"stg-s3-stt-vpc-acss-pt",
+        "NetworkOrigin":"VPC",
+        "PublicAccessBlockConfiguration":{
+          "BlockPublicAcls":true,
+          "BlockPublicPolicy":true,
+          "IgnorePublicAcls":true,
+          "RestrictPublicBuckets":true
+        },
+        "VpcConfiguration":{
+          "VpcId":{"Ref":"STGVPC"}
+        }
+      }
+    },
+    "STGS3STTINTACSSPT":{
+      "Type":"AWS::S3::AccessPoint",
+      "Condition":"CheckENV",
+      "DependsOn":["STGVPC","STGS3STTBKT"],
+      "Properties":{
+        "Bucket":{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},
+        "Name":"stg-s3-stt-int-acss-pt",
+        "NetworkOrigin":"Internet",
+        "Policy":{
+          "Version":"2012-10-17",
+          "Statement":[
+            {
+              "Sid":"001",
+              "Effect":"Allow",
+              "Principal":{
+                "AWS":{"Fn::Join":[":",["arn:aws:iam:",{"Ref":"AWS::AccountId"},"user/tuto"]]}
+              },
+              "Action":[
+                "s3:GetObject",
+                "s3:ListBucket"
+              ],
+              "Resource":[
+                {"Fn::Join":[":",["arn:aws:s3:us-west-2",{"Ref":"AWS::AccountId"},"accesspoint/stg-s3-stt-int-acss-pt"]]},
+                {"Fn::Join":[":",["arn:aws:s3:us-west-2",{"Ref":"AWS::AccountId"},"accesspoint/stg-s3-stt-int-acss-pt/object/*"]]}
+              ]
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration":{
+          "BlockPublicAcls":true,
+          "BlockPublicPolicy":true,
+          "IgnorePublicAcls":true,
+          "RestrictPublicBuckets":true
+        }
+      }
+    },
     "STGCFSTTOAI":{
       "Type":"AWS::CloudFront::CloudFrontOriginAccessIdentity",
       "Condition":"CheckENV",
@@ -524,7 +602,7 @@
           "Origins":[
             {
               "DomainName":{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt.s3.amazonaws.com"]]},
-              "Id":"S3Origin",
+              "Id":{"Fn::Join":["-",["S3",{"Ref":"STGS3STTBKT"}]]},
               "S3OriginConfig":{
                 "OriginAccessIdentity":{
                   "Fn::Join":["/",["origin-access-identity","cloudfront",{"Ref":"STGCFSTTOAI"}]]
@@ -540,7 +618,7 @@
             "MaxTTL" :31536000,
             "MinTTL":0,
             "SmoothStreaming":false,
-            "TargetOriginId":"S3Origin",
+            "TargetOriginId":{"Fn::Join":["-",["S3",{"Ref":"STGS3STTBKT"}]]},
             "ViewerProtocolPolicy":"allow-all",
             "ForwardedValues":{
               "QueryString":false,
@@ -560,12 +638,41 @@
           {"Key":"Product","Value":"CRM"}
         ]
       }
+    },
+    "STGEC2NATSR1":{
+      "Type":"AWS::EC2::Instance",
+      "Condition":"CheckENV",
+      "DependsOn":["STGIAMEC2RLINSTPF","STGVPC","STGVPCNATSN2","STGVPCNATSG"],
+      "Properties":{
+        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","NATSN2","AZ"]},
+        "CreditSpecification":{"CPUCredits":"standard"},
+        "DisableApiTermination":false,
+        "EbsOptimized":false,
+        "IamInstanceProfile":{"Ref":"STGIAMEC2RLINSTPF"},
+        "ImageId":{"Fn::FindInMap":["EC2AMICONF","NAT","Id"]},
+        "InstanceInitiatedShutdownBehavior":"stop",
+        "InstanceType":"t2.micro",
+        "KeyName":{"Ref":"STGEC2KeyPair"},
+        "NetworkInterfaces":[{
+          "AssociatePublicIpAddress":true,
+          "DeleteOnTermination":true,
+          "DeviceIndex":"0",
+          "GroupSet":[{"Ref":"STGVPCNATSG"}],
+          "SubnetId":{"Ref":"STGVPCNATSN2"},
+          "PrivateIpAddress":"10.2.6.10"
+        }],
+        "SourceDestCheck":false,
+        "Tenancy":"default",
+        "Tags":[
+          {"Key":"Name","Value":"STG-EC2-NAT-SR-1"},
+          {"Key":"Environment","Value":"STG"},
+          {"Key":"Region","Value":"us-west-2"},
+          {"Key":"Product","Value":"CRM"}
+        ]
+      }
     }
   },
   "Outputs":{
-    "STGVPCID":{
-      "Value":{"Ref":"STGVPC"}
-    },
     "STGCFSTTDSTUrl":{
       "Value":{"Fn::GetAtt":["STGCFSTTDST","DomainName"]}
     }
