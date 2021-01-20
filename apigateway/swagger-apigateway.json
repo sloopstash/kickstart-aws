@@ -1,0 +1,61 @@
+{
+  "swagger":"2.0",
+  "info":{
+    "description":"APIs for CRM application.",
+    "version":"2021-01-19T06:56:05Z",
+    "title":"CRM"
+  },
+  "basePath":"/prd",
+  "schemes":[
+    "https"
+  ],
+  "paths":{
+    "/account":{
+      "get":{
+        "produces":[
+          "application/json"
+        ],
+        "parameters":[
+          {
+            "name":"organization",
+            "in":"query",
+            "required":false,
+            "type":"string"
+          },
+          {
+            "name":"table",
+            "in":"query",
+            "required":false,
+            "type":"string"
+          }
+        ],
+        "responses":{
+          "200":{
+            "description":"200 response",
+            "schema":{
+              "$ref":"#/definitions/Empty"
+            }
+          }
+        },
+        "x-amazon-apigateway-integration":{
+          "uri":"arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:PRD-LFN-CRM-Accounts/invocations",
+          "httpMethod":"POST",
+          "responses":{
+            "default":{
+              "statusCode":"200"
+            }
+          },
+          "passthroughBehavior":"when_no_match",
+          "contentHandling":"CONVERT_TO_TEXT",
+          "type":"aws_proxy"
+        }
+      }
+    }
+  },
+  "definitions":{
+    "Empty":{
+      "type":"object",
+      "title":"Empty Schema"
+    }
+  }
+}

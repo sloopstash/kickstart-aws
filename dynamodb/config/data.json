@@ -1,0 +1,13 @@
+{
+  "accounts":[{
+    "organization":"sloopstash",
+    "email":"tuto@sloopstash.com",
+    "fullname":"Tuto",
+    "phone":"+91111111111"
+  },{
+    "organization":"abc",
+    "fullname":"John",
+    "email":"john@abc.com",
+    "phone":"+9122222222"
+  }]
+}
