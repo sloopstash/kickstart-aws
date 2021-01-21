@@ -1,0 +1,34 @@
+{
+  "users":[
+    {
+      "name":"Paul Micheal",
+      "email":"paul@sloopstash.com",
+      "phone":"+91 2372199582",
+      "organization":"SloopStash"
+    },
+    {
+      "name":"Augustus Theophilus",
+      "email":"agustus@sloopstash.com",
+      "phone":"+91 8647133336",
+      "organization":"SloopStash"
+    },
+    {
+      "name":"David Abraham",
+      "email":"david@sloopstash.com",
+      "phone":"+91 4185950826",
+      "organization":"SloopStash"
+    },
+      {
+      "name":"Robert Saunders",
+      "email":"robert@accenture.com",
+      "phone":"+91 1586033231",
+      "organization":"Accenture"
+    },
+    {
+      "name":"Amelie Perry",
+      "email":"amelie@accenture.com",
+      "phone":"+91 5146859080",
+      "organization":"Accenture"
+    }
+  ]
+}
