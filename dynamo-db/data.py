@@ -9,8 +9,8 @@
 import sys
 import json
 import argparse
-from time import time
-from datetime import datetime
+from time import mktime
+from datetime import datetime,timedelta
 
 # Import AWS SDK for python.
 import boto3
@@ -25,21 +25,30 @@ def parse_json(Filename):
   return Content
 
 # Configurations
-data = parse_json('dynamodb/config/data.json')
-config = parse_json('dynamodb/config/main.json')
-schema = parse_json('dynamodb/config/schema.json')
+dataset = parse_json('dynamo-db/conf/data.json')
+config = parse_json('dynamo-db/conf/main.conf')
+schema = parse_json('dynamo-db/conf/schema.conf')
 
 # Initialize DynamoDB client.
 DynamoDB = boto3.resource('dynamodb', region_name=config['region'], endpoint_url=config['endpoint'])
 
-# Populate accounts data
+# Populate data
 def _populate_data(args):
   table = args.table_name
-  for account in data['accounts']:
+  data = dataset[args.entity]
+  data_count = len(data)
+
+  def past_date_timestamp(index):
+    no_of_elapsed_days = data_count - index
+    past_dt = datetime.now() - timedelta(days=no_of_elapsed_days)
+    return int(mktime(past_dt.timetuple()))
+
+  for index in range(data_count):
     try:
-      account['created'] = account['updated'] = datetime.fromtimestamp(int(time())).strftime('%A, %b %d %Y, %H:%M%p')
-      DynamoDB.Table(table).put_item(Item=account)
-      print('Done creating account: '+account['organization'])
+      data[index]['id'] = int(data[index]['id'])
+      data[index]['updated'] = past_date_timestamp(index)
+      DynamoDB.Table(table).put_item(Item=data[index])
+      print('Done creating item: '+data[index]['name'])
     except Exception as error:
       print(error)
 
@@ -49,6 +58,7 @@ cli_action = cli.add_subparsers(dest="action")
 
 populate = cli_action.add_parser("populate")
 populate.add_argument('-t',dest='table_name',type=str,required=True,help='Table name.')
+populate.add_argument('-e',dest='entity',type=str,required=True,help='User entity.')
 
 args = cli.parse_args()
 

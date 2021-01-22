@@ -9,6 +9,7 @@
 import sys
 import json
 import argparse
+from datetime import datetime
 
 # Import AWS SDK for python.
 import boto3
@@ -23,8 +24,8 @@ def parse_json(Filename):
   return Content
 
 # configurations
-config = parse_json('dynamodb/config/main.json')
-schema = parse_json('dynamodb/config/schema.json')
+config = parse_json('dynamo-db/conf/main.conf')
+schema = parse_json('dynamo-db/conf/schema.conf')
 
 # Initialize DynamoDB client.
 DynamoDB = boto3.resource('dynamodb', region_name=config['region'], endpoint_url=config['endpoint'])
@@ -32,7 +33,7 @@ DynamoDB = boto3.resource('dynamodb', region_name=config['region'], endpoint_url
 # Create table
 def _create_table(args):
   table = args.table_name
-  if table in config['tables']:
+  if table in config['table']:
     try:
       if schema[table].has_key('GlobalSecondaryIndexes'):
         DynamoDB.create_table(
@@ -59,7 +60,7 @@ def _create_table(args):
 # Delete table
 def _delete_table(args):
   table = args.table_name
-  if table in config['tables']:
+  if table in config['table']:
     try:
       DynamoDB.Table(table).delete()
       print('Done deleting table: '+table)
@@ -71,8 +72,19 @@ def _delete_table(args):
 # Scaning table
 def _scan_table(args):
   table = args.table_name
-  if table in config['tables']:
-    response = DynamoDB.Table(table).scan()
+  index = args.index_name
+  if table in config['table']:
+    if index:
+      response = DynamoDB.Table(table).scan(IndexName=index)
+    else:
+      response = DynamoDB.Table(table).scan()
+    items = []
+    for item in response['Items']:
+      item = dict(item)
+      item['id'] = int(item['id'])
+      item['updated'] = datetime.fromtimestamp(item['updated']).strftime('%Y-%m-%d %H:%M:%S')
+      items.append(item)
+    response['Items'] = items
     print(json.dumps(response, indent=4))
   else:
     print('Table not exist.')
@@ -80,11 +92,26 @@ def _scan_table(args):
 # Query table
 def _query_table(args):
   table = args.table_name
-  organization = args.organization
-  if table in config['tables']:
-    response = DynamoDB.Table(table).query(
-      KeyConditionExpression=Key('organization').eq(organization)
-    )
+  index = args.index_name
+  condition_key = args.key
+  condition_value = args.value
+  if table in config['table']:
+    if index:
+      response = DynamoDB.Table(table).query(
+        IndexName=index,
+        KeyConditionExpression=Key(condition_key).eq(condition_value)
+      )
+    else:
+      response = DynamoDB.Table(table).query(
+        KeyConditionExpression=Key(condition_key).eq(condition_value)
+      )
+    items = []
+    for item in response['Items']:
+      item = dict(item)
+      item['id'] = int(item['id'])
+      item['updated'] = datetime.fromtimestamp(item['updated']).strftime('%Y-%m-%d %H:%M:%S')
+      items.append(item)
+    response['Items'] = items
     print(json.dumps(response, indent=4))
   else:
     print('Table not exist.')
@@ -101,10 +128,13 @@ delete.add_argument('-t',dest='table_name',type=str,required=True,help='Table na
 
 scan = cli_action.add_parser("scan")
 scan.add_argument('-t',dest='table_name',type=str,required=True,help='Table name.')
+scan.add_argument('-i',dest='index_name',type=str,help='Index name.')
 
 query = cli_action.add_parser("query")
 query.add_argument('-t',dest='table_name',type=str,required=True,help='Table name.')
-query.add_argument('-o',dest='organization',type=str,required=True,help='Organization name.')
+query.add_argument('-i',dest='index_name',type=str,help='Index name.')
+query.add_argument('-k',dest='key',type=str,required=True,help='Key for condition expression.')
+query.add_argument('-v',dest='value',type=str,required=True,help='Value for condition expression.')
 
 args = cli.parse_args()
 
