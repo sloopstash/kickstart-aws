@@ -10,7 +10,7 @@
     "https"
   ],
   "paths":{
-    "/account":{
+    "/users":{
       "get":{
         "produces":[
           "application/json"
@@ -18,12 +18,6 @@
         "parameters":[
           {
             "name":"organization",
-            "in":"query",
-            "required":false,
-            "type":"string"
-          },
-          {
-            "name":"table",
             "in":"query",
             "required":false,
             "type":"string"
@@ -38,7 +32,7 @@
           }
         },
         "x-amazon-apigateway-integration":{
-          "uri":"arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:PRD-LFN-CRM-Accounts/invocations",
+          "uri":"arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:PRD-LMD-Get-Users-FUNC/invocations",
           "httpMethod":"POST",
           "responses":{
             "default":{
