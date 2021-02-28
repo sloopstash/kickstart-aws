@@ -33,7 +33,7 @@ def _create_table(args):
   table = args.table_name
   if table in config['table']:
     try:
-      if schema[table].has_key('GlobalSecondaryIndexes'):
+      if 'GlobalSecondaryIndexes' in schema[table]:
         DynamoDB.create_table(
           TableName=table,
           KeySchema=schema[table]['KeySchema'],
