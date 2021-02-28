@@ -10,12 +10,10 @@ import sys
 import json
 import argparse
 from datetime import datetime
-
-# Import AWS SDK for python.
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
-# Returns parsed json content.
+# Return parsed JSON content.
 def parse_json(Filename):
   File = open(Filename,'r')
   Content = File.read()
@@ -23,14 +21,14 @@ def parse_json(Filename):
   File.close()
   return Content
 
-# configurations
+# Load configuration.
 config = parse_json('dynamo-db/conf/main.conf')
 schema = parse_json('dynamo-db/conf/schema.conf')
 
 # Initialize DynamoDB client.
-DynamoDB = boto3.resource('dynamodb', region_name=config['region'], endpoint_url=config['endpoint'])
+DynamoDB = boto3.resource('dynamodb',region_name=config['region'],endpoint_url=config['endpoint'])
 
-# Create table
+# Create DynamoDB table.
 def _create_table(args):
   table = args.table_name
   if table in config['table']:
@@ -57,7 +55,7 @@ def _create_table(args):
   else:
     print('Table not exist.')
 
-# Delete table
+# Delete DynamoDB table.
 def _delete_table(args):
   table = args.table_name
   if table in config['table']:
@@ -69,7 +67,7 @@ def _delete_table(args):
   else:
     print('Table not exist.')
 
-# Scaning table
+# Scan DynamoDB table.
 def _scan_table(args):
   table = args.table_name
   index = args.index_name
@@ -89,7 +87,7 @@ def _scan_table(args):
   else:
     print('Table not exist.')
 
-# Query table
+# Query DynamoDB table.
 def _query_table(args):
   table = args.table_name
   index = args.index_name
@@ -138,14 +136,13 @@ query.add_argument('-v',dest='value',type=str,required=True,help='Value for cond
 
 args = cli.parse_args()
 
-# Validates action.
-if args.action == 'create':
+if args.action=='create':
   _create_table(args)
-elif args.action == 'delete':
+elif args.action=='delete':
   _delete_table(args)
-elif args.action == 'scan':
+elif args.action=='scan':
   _scan_table(args)
-elif args.action == 'query':
+elif args.action=='query':
   _query_table(args)
 else:
   print('Invalid action.')

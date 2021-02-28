@@ -31,4 +31,4 @@ response = SES.send_email(
   },
   Source=args.sender
 )
-print(json.dumps(response, indent=4))
+print(json.dumps(response,indent=4))

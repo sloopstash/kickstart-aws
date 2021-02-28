@@ -27,4 +27,4 @@ response = SNS.subscribe(
   Endpoint=args.email,
   ReturnSubscriptionArn=True
 )
-print(json.dumps(response, indent=4))
+print(json.dumps(response,indent=4))
