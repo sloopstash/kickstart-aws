@@ -23,15 +23,14 @@ def parse_json(Filename):
 
 # Load configuration.
 config = parse_json('dynamo-db/conf/main.conf')
-schema = parse_json('dynamo-db/conf/schema.conf')
+schema = parse_json('dynamo-db/table/schema.json')
 
 # Initialize DynamoDB client.
 DynamoDB = boto3.resource('dynamodb',region_name=config['region'],endpoint_url=config['endpoint'])
 
-# Create DynamoDB table.
-def _create_table(args):
-  table = args.table_name
-  if table in config['table']:
+# Create DynamoDB tables.
+def create_tables():
+  for table in config['table']:
     try:
       if 'GlobalSecondaryIndexes' in schema[table]:
         DynamoDB.create_table(
@@ -52,23 +51,28 @@ def _create_table(args):
         print('Done creating table: '+table)
     except Exception as error:
       print(error)
-  else:
-    print('Table not exist.')
+      break
+
+  # Populate counter.
+  try:
+    DynamoDB.Table('counters').put_item(Item={'name':'ac','value':int(0)})
+    DynamoDB.Table('counters').put_item(Item={'name':'u','value':int(0)})
+    print('Done creating counters')
+  except Exception as error:
+    print(error)
 
 # Delete DynamoDB table.
-def _delete_table(args):
-  table = args.table_name
-  if table in config['table']:
+def delete_tables():
+  for table in config['table']:
     try:
       DynamoDB.Table(table).delete()
       print('Done deleting table: '+table)
     except Exception as error:
       print(error)
-  else:
-    print('Table not exist.')
+      break
 
 # Scan DynamoDB table.
-def _scan_table(args):
+def scan_table(args):
   table = args.table_name
   index = args.index_name
   if table in config['table']:
@@ -80,7 +84,13 @@ def _scan_table(args):
     for item in response['Items']:
       item = dict(item)
       item['id'] = int(item['id'])
-      item['updated'] = datetime.fromtimestamp(item['updated']).strftime('%Y-%m-%d %H:%M:%S')
+      item['status'] = int(item['status'])
+      if 'account_id' in item:
+        item['account_id'] = int(item['account_id'])
+      if 'admin_uid' in item:
+        item['admin_uid'] = int(item['admin_uid'])
+      item['created'] = datetime.fromtimestamp(int(item['created'])).strftime('%Y-%m-%d %H:%M:%S')
+      item['updated'] = datetime.fromtimestamp(int(item['updated'])).strftime('%Y-%m-%d %H:%M:%S')
       items.append(item)
     response['Items'] = items
     print(json.dumps(response, indent=4))
@@ -88,11 +98,14 @@ def _scan_table(args):
     print('Table not exist.')
 
 # Query DynamoDB table.
-def _query_table(args):
+def query_table(args):
   table = args.table_name
   index = args.index_name
   condition_key = args.key
-  condition_value = args.value
+  if condition_key in ['id','account_id','admin_uid']:
+    condition_value = int(args.value)
+  else:
+    condition_value = args.value
   if table in config['table']:
     if index:
       response = DynamoDB.Table(table).query(
@@ -107,7 +120,13 @@ def _query_table(args):
     for item in response['Items']:
       item = dict(item)
       item['id'] = int(item['id'])
-      item['updated'] = datetime.fromtimestamp(item['updated']).strftime('%Y-%m-%d %H:%M:%S')
+      item['status'] = int(item['status'])
+      if 'account_id' in item:
+        item['account_id'] = int(item['account_id'])
+      if 'admin_uid' in item:
+        item['admin_uid'] = int(item['admin_uid'])
+      item['created'] = datetime.fromtimestamp(int(item['created'])).strftime('%Y-%m-%d %H:%M:%S')
+      item['updated'] = datetime.fromtimestamp(int(item['updated'])).strftime('%Y-%m-%d %H:%M:%S')
       items.append(item)
     response['Items'] = items
     print(json.dumps(response, indent=4))
@@ -119,10 +138,8 @@ cli = argparse.ArgumentParser(description='A CLI to manage DynamoDB table.')
 cli_action = cli.add_subparsers(dest="action")
 
 create = cli_action.add_parser("create")
-create.add_argument('-t',dest='table_name',type=str,required=True,help='Table name.')
 
 delete = cli_action.add_parser("delete")
-delete.add_argument('-t',dest='table_name',type=str,required=True,help='Table name.')
 
 scan = cli_action.add_parser("scan")
 scan.add_argument('-t',dest='table_name',type=str,required=True,help='Table name.')
@@ -137,12 +154,12 @@ query.add_argument('-v',dest='value',type=str,required=True,help='Value for cond
 args = cli.parse_args()
 
 if args.action=='create':
-  _create_table(args)
+  create_tables()
 elif args.action=='delete':
-  _delete_table(args)
+  delete_tables()
 elif args.action=='scan':
-  _scan_table(args)
+  scan_table(args)
 elif args.action=='query':
-  _query_table(args)
+  query_table(args)
 else:
   print('Invalid action.')

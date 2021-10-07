@@ -1,13 +1,23 @@
 {
-  "prd_crm_users":{
+  "counters":{
+    "KeySchema":[
+      {"AttributeName":"name","KeyType":"HASH"}
+    ],
+    "AttributeDefinitions":[
+      {"AttributeName":"name","AttributeType":"S"}
+    ],
+    "ProvisionedThroughput":{
+      "ReadCapacityUnits":1,
+      "WriteCapacityUnits":1
+    }
+  },
+  "accounts":{
     "KeySchema":[
       {"AttributeName":"id","KeyType":"HASH"}
     ],
     "AttributeDefinitions":[
       {"AttributeName":"id","AttributeType":"N"},
-      {"AttributeName":"email","AttributeType":"S"},
-      {"AttributeName":"organization","AttributeType":"S"},
-      {"AttributeName":"updated","AttributeType":"N"}
+      {"AttributeName":"namespace","AttributeType":"S"}
     ],
     "ProvisionedThroughput":{
       "ReadCapacityUnits":1,
@@ -15,21 +25,35 @@
     },
     "GlobalSecondaryIndexes":[
       {
-        "IndexName":"prd_crm_users_index_email",
+        "IndexName":"accounts_index_namespace",
         "KeySchema":[
-          {"AttributeName":"email","KeyType":"HASH"}
+          {"AttributeName":"namespace","KeyType":"HASH"}
         ],
         "Projection":{"ProjectionType":"ALL"},
         "ProvisionedThroughput":{
           "ReadCapacityUnits":1,
           "WriteCapacityUnits":1
         }
-      },
+      }
+    ]
+  },
+  "users":{
+    "KeySchema":[
+      {"AttributeName":"id","KeyType":"HASH"}
+    ],
+    "AttributeDefinitions":[
+      {"AttributeName":"id","AttributeType":"N"},
+      {"AttributeName":"account_id","AttributeType":"N"}
+    ],
+    "ProvisionedThroughput":{
+      "ReadCapacityUnits":1,
+      "WriteCapacityUnits":1
+    },
+    "GlobalSecondaryIndexes":[
       {
-        "IndexName":"prd_crm_users_index_organization",
+        "IndexName":"users_index_account_id",
         "KeySchema":[
-          {"AttributeName":"organization","KeyType":"HASH"},
-          {"AttributeName":"updated","KeyType":"RANGE"}
+          {"AttributeName":"account_id","KeyType":"HASH"}
         ],
         "Projection":{"ProjectionType":"ALL"},
         "ProvisionedThroughput":{

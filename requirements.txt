@@ -1,1 +1,4 @@
 boto3==1.16.41
+pandas==1.2.4
+SQLAlchemy==1.1.
+PyMySQL==0.10.0
