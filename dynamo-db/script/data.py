@@ -6,7 +6,6 @@
 ##
 
 # Import community modules.
-import sys
 import json
 import argparse
 from time import time
@@ -22,7 +21,7 @@ def parse_json(Filename):
   return Content
 
 # Load data and configuration.
-dataset = parse_json('dynamo-db/data/dataset.json')
+dataset = parse_json('dynamo-db/data/crm.json')
 config = parse_json('dynamo-db/conf/main.conf')
 schema = parse_json('dynamo-db/table/schema.json')
 

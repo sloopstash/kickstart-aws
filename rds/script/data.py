@@ -6,12 +6,8 @@
 ##
 
 # Import community modules.
-import os
-import sys
 import json
-import boto3
 import argparse
-import pandas as pd
 from time import time
 from datetime import datetime
 from sqlalchemy.engine import create_engine
@@ -26,8 +22,8 @@ def parse_json(Filename):
   return Content
 
 # Load configuration.
-config = parse_json('rds/instance/mysql/conf/main.conf')
-dataset = parse_json('rds/instance/mysql/data/dataset.json')
+config = parse_json('rds/conf/main.conf')
+dataset = parse_json('rds/data/crm.json')
 
 # Initialize MySQL connection.
 connection = create_engine(
