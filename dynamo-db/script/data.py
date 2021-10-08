@@ -82,6 +82,7 @@ def populate_data(args):
           'created':date_time,
           'updated':date_time
         })
+      print('Done populating data.')
     except Exception as error:
       print(error)
       break
