@@ -4,19 +4,19 @@
       "id":1,
       "name":"Paul Micheal",
       "email":"paul@sloopstash.com",
-      "password":"Testing123$#$#",
+      "password":"test123",
       "namespace":"sloopstash",
-      "organization":"Sloopstash Technologies Private Limited",
-      "phone":"+91 2372199582"
+      "organization":"SloopStash",
+      "phone":"+91 7000000000"
     },
     {
       "id":2,
       "name":"Robert Saunders",
-      "email":"robert@accenture.com",
-      "password":"Testing123$#$#",
-      "namespace":"accenture",
-      "organization":"Accenture",
-      "phone":"+91 1586033231"
+      "email":"robert@abc.com",
+      "password":"test123",
+      "namespace":"abc",
+      "organization":"ABC",
+      "phone":"+91 8000000000"
     }
   ],
   "users":[
@@ -24,19 +24,19 @@
       "account_id":1,
       "name":"Augustus Theophilus",
       "email":"agustus@sloopstash.com",
-      "password":"Testing123$#$#"
+      "password":"test123"
     },
     {
       "account_id":1,
       "name":"David Abraham",
       "email":"david@sloopstash.com",
-      "password":"Testing123$#$#"
+      "password":"test123"
     },
     {
       "account_id":2,
       "name":"Amelie Perry",
-      "email":"amelie@accenture.com",
-      "password":"Testing123$#$#"
+      "email":"amelie@abc.com",
+      "password":"test123"
     }
   ]
 }
