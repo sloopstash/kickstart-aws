@@ -8,6 +8,7 @@
 # Import community modules.
 import json
 import argparse
+import decimal
 from datetime import datetime
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -19,6 +20,9 @@ def parse_json(Filename):
   Content = json.loads(Content)
   File.close()
   return Content
+
+# Convert decimal value to integer value.
+decimal_to_int_converter = lambda x: int(x) if isinstance(x,decimal.Decimal) else x
 
 # Load configuration.
 config = parse_json('dynamo-db/conf/main.conf')
@@ -79,20 +83,12 @@ def scan_table(args):
       response = DynamoDB.Table(table).scan(IndexName=index)
     else:
       response = DynamoDB.Table(table).scan()
-    items = []
     for item in response['Items']:
-      item = dict(item)
-      item['id'] = int(item['id'])
-      item['status'] = int(item['status'])
-      if 'account_id' in item:
-        item['account_id'] = int(item['account_id'])
-      if 'admin_uid' in item:
-        item['admin_uid'] = int(item['admin_uid'])
-      item['created'] = datetime.fromtimestamp(int(item['created'])).strftime('%Y-%m-%d %H:%M:%S')
-      item['updated'] = datetime.fromtimestamp(int(item['updated'])).strftime('%Y-%m-%d %H:%M:%S')
-      items.append(item)
-    response['Items'] = items
-    print(json.dumps(response, indent=4))
+      for key in item:
+        item[key] = decimal_to_int_converter(item[key])
+        if key in ['created','updated']:
+          item[key] = datetime.fromtimestamp(int(item[key])).strftime('%Y-%m-%d %H:%M:%S')
+    print(json.dumps(response['Items'],indent=4))
   else:
     print('Table not exist.')
 
@@ -115,20 +111,12 @@ def query_table(args):
       response = DynamoDB.Table(table).query(
         KeyConditionExpression=Key(condition_key).eq(condition_value)
       )
-    items = []
     for item in response['Items']:
-      item = dict(item)
-      item['id'] = int(item['id'])
-      item['status'] = int(item['status'])
-      if 'account_id' in item:
-        item['account_id'] = int(item['account_id'])
-      if 'admin_uid' in item:
-        item['admin_uid'] = int(item['admin_uid'])
-      item['created'] = datetime.fromtimestamp(int(item['created'])).strftime('%Y-%m-%d %H:%M:%S')
-      item['updated'] = datetime.fromtimestamp(int(item['updated'])).strftime('%Y-%m-%d %H:%M:%S')
-      items.append(item)
-    response['Items'] = items
-    print(json.dumps(response, indent=4))
+      for key in item:
+        item[key] = decimal_to_int_converter(item[key])
+        if key in ['created','updated']:
+          item[key] = datetime.fromtimestamp(int(item[key])).strftime('%Y-%m-%d %H:%M:%S')
+    print(json.dumps(response['Items'],indent=4))
   else:
     print('Table not exist.')
 
