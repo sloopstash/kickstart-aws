@@ -1,52 +1,44 @@
 {
   "AWSTemplateFormatVersion":"2010-09-09",
-  "Description":"Base AWS Resources for CRM STG.",
+  "Description":"Base AWS Resources for CRM app.",
   "Metadata":{
-    "ENV":{"Description":"STG"},
-    "Product":{"Description":"CRM"}
+    "AWS::CloudFormation::Interface":{
+      "ParameterGroups":[
+        {"Label":{"default":"Common Configuration"},"Parameters":["ENV"]},
+        {"Label":{"default":"Amazon EC2 Configuration"},"Parameters":["EC2KeyPair"]},
+        {"Label":{"default":"Amazon S3 Configuration"},"Parameters":["S3BucketPrefix"]}
+      ],
+      "ParameterLabels":{
+        "ENV":{"default":"Which environment should this CRM app be deployed to?"},
+        "EC2KeyPair":{"default":"Select SSH key pair name"},
+        "S3BucketPrefix":{"default":"Enter a prefix for S3 app static bucket"}
+      }
+    }
   },
   "Parameters":{
     "ENV":{
       "Type":"String",
-      "Description":"CRM Environment."
+      "Default":"prd",
+      "AllowedValues":["prd","stg"],
+      "ConstraintDescription":"must specify prd, or stg"
     },
-    "STGVPCCIDRBLK":{
+    "EC2KeyPair":{
+      "Type":"AWS::EC2::KeyPair::KeyName",
+      "Description":"Name of an existing EC2 KeyPair to enable SSH access to the CRM app servers"
+    },
+    "S3BucketPrefix":{
       "Type":"String",
-      "Description":"STG VPC CIDR Block."
-    },
-    "STGS3STTBKTPFX":{
-      "Type":"String",
-      "Description":"STG S3 Static Bucket Prefix."
-    },
-    "STGEC2KeyPair":{
-      "Type":"String",
-      "Description":"STG EC2 Key Pair."
-    }
-  },
-  "Mappings":{
-    "VPCSNCONF":{
-      "AppSN1":{"AZ":"us-west-2a","CIDR":"10.2.1.0/24"},
-      "AppSN2":{"AZ":"us-west-2b","CIDR":"10.2.2.0/24"},
-      "RedisSN1":{"AZ":"us-west-2a","CIDR":"10.2.3.0/24"},
-      "RedisSN2":{"AZ":"us-west-2b","CIDR":"10.2.4.0/24"},
-      "NATSN1":{"AZ":"us-west-2a","CIDR":"10.2.5.0/24"},
-      "NATSN2":{"AZ":"us-west-2b","CIDR":"10.2.6.0/24"},
-      "LBSN1":{"AZ":"us-west-2a","CIDR":"10.2.7.0/24"},
-      "LBSN2":{"AZ":"us-west-2b","CIDR":"10.2.8.0/24"}
-    },
-    "EC2AMICONF":{
-      "App":{"Id":"ami-0a36eb8fadc976275"},
-      "Redis":{"Id":"ami-0a36eb8fadc976275"},
-      "NAT":{"Id":"ami-009816cdbb1e74ceb"}
+      "ConstraintDescription":"must begin with a letter and contain only alphanumeric characters"
     }
   },
   "Conditions":{
-    "CheckENV":{"Fn::Equals":[{"Ref":"ENV"},"STG"]}
+    "CheckENV":{"Fn::Equals":[{"Ref":"ENV"},"prd"]}
   },
   "Resources":{
-    "STGIAMEC2RL":{
+    "IAMEC2RL":{
       "Type":"AWS::IAM::Role",
       "Condition":"CheckENV",
+      "DependsOn":["S3AppSTTBKT"],
       "Properties":{
         "AssumeRolePolicyDocument":{
           "Version":"2012-10-17",
@@ -64,341 +56,399 @@
           "arn:aws:iam::aws:policy/AmazonS3FullAccess"
         ],
         "Path":"/",
-        "RoleName":"STG-IAM-EC2-RL",
+        "RoleName":{"Fn::Join":["",[{"Ref":"ENV"},"-iam-ec2-rl"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-IAM-EC2-RL"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-iam-ec2-rl"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGIAMEC2RLINSTPF":{
+    "IAMEC2RLINSTPF":{
       "Type":"AWS::IAM::InstanceProfile",
       "Condition":"CheckENV",
-      "DependsOn":["STGIAMEC2RL"],
+      "DependsOn":["IAMEC2RL"],
       "Properties":{
+        "InstanceProfileName":{"Fn::Join":["",[{"Ref":"ENV"},"-iam-ec2-rl-inst-pf"]]},
         "Path":"/",
-        "Roles":[{"Ref":"STGIAMEC2RL"}]
+        "Roles":[{"Ref":"IAMEC2RL"}]
       }
     },
-    "STGVPC":{
+    "VPCNET":{
       "Type":"AWS::EC2::VPC",
       "Condition":"CheckENV",
       "Properties":{
-        "CidrBlock":{"Ref":"STGVPCCIDRBLK"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.0.0/16","12.1.0.0/16"]},
         "EnableDnsSupport":true,
         "EnableDnsHostnames":true,
         "InstanceTenancy":"default",
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-net"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCIG":{
+    "VPCIG":{
       "Type":"AWS::EC2::InternetGateway",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-IG"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-ig"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCIGATH":{
+    "VPCIGATH":{
       "Type":"AWS::EC2::VPCGatewayAttachment",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCIG"],
+      "DependsOn":["VPCNET","VPCIG"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "InternetGatewayId":{"Ref":"STGVPCIG"}
+        "VpcId":{"Ref":"VPCNET"},
+        "InternetGatewayId":{"Ref":"VPCIG"}
       }
     },
-    "STGVPCRTTPUB":{
+    "VPCPUBRTT":{
       "Type":"AWS::EC2::RouteTable",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
+        "VpcId":{"Ref":"VPCNET"},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-RTT-PUB"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-pub-rtt"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCRTTPUBRT1":{
+    "VPCPUBRTTRT1":{
       "Type":"AWS::EC2::Route",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCIG","STGVPCRTTPUB"],
+      "DependsOn":["VPCNET","VPCIG","VPCIGATH","VPCPUBRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPUB"},
+        "RouteTableId":{"Ref":"VPCPUBRTT"},
         "DestinationCidrBlock":"0.0.0.0/0",
-        "GatewayId":{"Ref":"STGVPCIG"}
+        "GatewayId":{"Ref":"VPCIG"}
       }
     },
-    "STGVPCRTTPVT":{
+    "VPCPVTRTT":{
       "Type":"AWS::EC2::RouteTable",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
+        "VpcId":{"Ref":"VPCNET"},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-RTT-PVT"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-pvt-rtt"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCRTTPVTRT1":{
+    "VPCPVTRTTRT1":{
       "Type":"AWS::EC2::Route",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCRTTPVT","STGEC2NATSR1"],
+      "DependsOn":["VPCNET","VPCPVTRTT","EC2NATSR1"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPVT"},
+        "RouteTableId":{"Ref":"VPCPVTRTT"},
         "DestinationCidrBlock":"0.0.0.0/0",
-        "InstanceId":{"Ref":"STGEC2NATSR1"}
+        "InstanceId":{"Ref":"EC2NATSR1"}
       }
     },
-    "STGVPCAppSN1":{
+    "VPCS3EP":{
+      "Type":"AWS::EC2::VPCEndpoint",
+      "Condition":"CheckENV",
+      "DependsOn":["VPCNET","VPCPUBRTT","VPCPVTRTT"],
+      "Properties":{
+        "RouteTableIds":[{"Ref":"VPCPUBRTT"},{"Ref":"VPCPVTRTT"}],
+        "ServiceName":{"Fn::Join":["",["com.amazonaws.",{"Ref":"AWS::Region"},".s3"]]},
+        "VpcEndpointType":"Gateway",
+        "VpcId":{"Ref":"VPCNET"}
+      }
+    },
+    "VPCAppSN1":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","AppSN1","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","AppSN1","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.1.0/24","12.1.1.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-App-SN-1"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-app-sn-1"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCAppSN1RTTASS":{
+    "VPCAppSN1RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCAppSN1","STGVPCRTTPVT"],
+      "DependsOn":["VPCAppSN1","VPCPVTRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPVT"},
-        "SubnetId":{"Ref":"STGVPCAppSN1"}
+        "RouteTableId":{"Ref":"VPCPVTRTT"},
+        "SubnetId":{"Ref":"VPCAppSN1"}
       }
     },
-    "STGVPCAppSN2":{
+    "VPCAppSN2":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","AppSN2","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","AppSN2","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.2.0/24","12.1.2.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-App-SN-2"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-app-sn-2"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCAppSN2RTTASS":{
+    "VPCAppSN2RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCAppSN2","STGVPCRTTPVT"],
+      "DependsOn":["VPCAppSN2","VPCPVTRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPVT"},
-        "SubnetId":{"Ref":"STGVPCAppSN2"}
+        "RouteTableId":{"Ref":"VPCPVTRTT"},
+        "SubnetId":{"Ref":"VPCAppSN2"}
       }
     },
-    "STGVPCRedisSN1":{
+    "VPCRedisSN1":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","RedisSN1","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","RedisSN1","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.3.0/24","12.1.3.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-Redis-SN-1"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-redis-sn-1"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCRedisSN1RTTASS":{
+    "VPCRedisSN1RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCRedisSN1","STGVPCRTTPVT"],
+      "DependsOn":["VPCRedisSN1","VPCPVTRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPVT"},
-        "SubnetId":{"Ref":"STGVPCRedisSN1"}
+        "RouteTableId":{"Ref":"VPCPVTRTT"},
+        "SubnetId":{"Ref":"VPCRedisSN1"}
       }
     },
-    "STGVPCRedisSN2":{
+    "VPCRedisSN2":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","RedisSN2","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","RedisSN2","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.4.0/24","12.1.4.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-Redis-SN-2"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-redis-sn-2"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCRedisSN2RTTASS":{
+    "VPCRedisSN2RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCRedisSN2","STGVPCRTTPVT"],
+      "DependsOn":["VPCRedisSN2","VPCPVTRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPVT"},
-        "SubnetId":{"Ref":"STGVPCRedisSN2"}
+        "RouteTableId":{"Ref":"VPCPVTRTT"},
+        "SubnetId":{"Ref":"VPCRedisSN2"}
       }
     },
-    "STGVPCNATSN1":{
+    "VPCNATSN1":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","NATSN1","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","NATSN1","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.5.0/24","12.1.5.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-NAT-SN-1"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-nat-sn-1"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCNATSN1RTTASS":{
+    "VPCNATSN1RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCNATSN1","STGVPCRTTPUB"],
+      "DependsOn":["VPCNATSN1","VPCPUBRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPUB"},
-        "SubnetId":{"Ref":"STGVPCNATSN1"}
+        "RouteTableId":{"Ref":"VPCPUBRTT"},
+        "SubnetId":{"Ref":"VPCNATSN1"}
       }
     },
-    "STGVPCNATSN2":{
+    "VPCNATSN2":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","NATSN2","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","NATSN2","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.6.0/24","12.1.6.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-NAT-SN-2"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-nat-sn-2"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCNATSN2RTTASS":{
+    "VPCNATSN2RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCNATSN2","STGVPCRTTPUB"],
+      "DependsOn":["VPCNATSN2","VPCPUBRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPUB"},
-        "SubnetId":{"Ref":"STGVPCNATSN2"}
+        "RouteTableId":{"Ref":"VPCPUBRTT"},
+        "SubnetId":{"Ref":"VPCNATSN2"}
       }
     },
-    "STGVPCLBSN1":{
+    "VPCLoadBalancerSN1":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","LBSN1","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","LBSN1","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.7.0/24","12.1.7.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-LB-SN-1"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-loadbalancer-sn-1"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCLBSN1RTTASS":{
+    "VPCLoadBalancerSN1RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCLBSN1","STGVPCRTTPUB"],
+      "DependsOn":["VPCLoadBalancerSN1","VPCPUBRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPUB"},
-        "SubnetId":{"Ref":"STGVPCLBSN1"}
+        "RouteTableId":{"Ref":"VPCPUBRTT"},
+        "SubnetId":{"Ref":"VPCLoadBalancerSN1"}
       }
     },
-    "STGVPCLBSN2":{
+    "VPCLoadBalancerSN2":{
       "Type":"AWS::EC2::Subnet",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "CidrBlock":{"Fn::FindInMap":["VPCSNCONF","LBSN2","CIDR"]},
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","LBSN2","AZ"]},
+        "VpcId":{"Ref":"VPCNET"},
+        "CidrBlock":{"Fn::If":["CheckENV","11.1.8.0/24","12.1.8.0/24"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-LB-SN-2"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-loadbalancer-sn-2"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCLBSN2RTTASS":{
+    "VPCLoadBalancerSN2RTTASS":{
       "Type":"AWS::EC2::SubnetRouteTableAssociation",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCLBSN2","STGVPCRTTPUB"],
+      "DependsOn":["VPCLoadBalancerSN2","VPCPUBRTT"],
       "Properties":{
-        "RouteTableId":{"Ref":"STGVPCRTTPUB"},
-        "SubnetId":{"Ref":"STGVPCLBSN2"}
+        "RouteTableId":{"Ref":"VPCPUBRTT"},
+        "SubnetId":{"Ref":"VPCLoadBalancerSN2"}
       }
     },
-    "STGVPCNATSG":{
+    "VPCAppSG":{
       "Type":"AWS::EC2::SecurityGroup",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET","VPCLoadBalancerSG","VPCNATSG"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "GroupDescription":"STG VPC NAT Security Group.",
-        "GroupName":"STG-VPC-NAT-SG",
+        "VpcId":{"Ref":"VPCNET"},
+        "GroupDescription":"VPC App Security Group.",
+        "GroupName":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-app-sg"]]},
         "SecurityGroupIngress":[
-          {"IpProtocol":"-1","CidrIp":{"Ref":"STGVPCCIDRBLK"}},
+          {"IpProtocol":"tcp","FromPort":22,"ToPort":22,"SourceSecurityGroupId":{"Ref":"VPCNATSG"}},
+          {"IpProtocol":"tcp","FromPort":5000,"ToPort":5000,"SourceSecurityGroupId":{"Ref":"VPCLoadBalancerSG"}}
+        ],
+        "SecurityGroupEgress":[
+          {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
+        ],
+        "Tags":[
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-app-sg"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
+        ]
+      }
+    },
+    "VPCRedisSG":{
+      "Type":"AWS::EC2::SecurityGroup",
+      "Condition":"CheckENV",
+      "DependsOn":["VPCNET","VPCAppSG","VPCNATSG"],
+      "Properties":{
+        "VpcId":{"Ref":"VPCNET"},
+        "GroupDescription":"VPC Redis Security Group.",
+        "GroupName":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-redis-sg"]]},
+        "SecurityGroupIngress":[
+          {"IpProtocol":"tcp","FromPort":22,"ToPort":22,"SourceSecurityGroupId":{"Ref":"VPCNATSG"}},
+          {"IpProtocol":"tcp","FromPort":6379,"ToPort":6379,"SourceSecurityGroupId":{"Ref":"VPCAppSG"}}
+        ],
+        "SecurityGroupEgress":[
+          {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
+        ],
+        "Tags":[
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-redis-sg"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
+        ]
+      }
+    },
+    "VPCNATSG":{
+      "Type":"AWS::EC2::SecurityGroup",
+      "Condition":"CheckENV",
+      "DependsOn":["VPCNET"],
+      "Properties":{
+        "VpcId":{"Ref":"VPCNET"},
+        "GroupDescription":"VPC NAT Security Group.",
+        "GroupName":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-nat-sg"]]},
+        "SecurityGroupIngress":[
+          {"IpProtocol":"-1","CidrIp":"11.1.0.0/16"},
           {"IpProtocol":"tcp","FromPort":22,"ToPort":22,"CidrIp":"0.0.0.0/0"}
         ],
         "SecurityGroupEgress":[
           {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
         ],
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-NAT-SG"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-nat-sg"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ] 
       }
     },
-    "STGVPCLBSG":{
+    "VPCLoadBalancerSG":{
       "Type":"AWS::EC2::SecurityGroup",
       "Condition":"CheckENV",
-      "DependsOn":["STGVPC"],
+      "DependsOn":["VPCNET"],
       "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "GroupDescription":"STG VPC LB Security Group.",
-        "GroupName":"STG-VPC-LB-SG",
+        "VpcId":{"Ref":"VPCNET"},
+        "GroupDescription":"VPC LB Security Group.",
+        "GroupName":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-loadbalancer-sg"]]},
         "SecurityGroupIngress":[
           {"IpProtocol":"tcp","FromPort":80,"ToPort":80,"CidrIp":"0.0.0.0/0"}
         ],
@@ -406,71 +456,14 @@
           {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
         ],
         "Tags":[
-          {"Key":"Name","Value":"STG-VPC-LB-SG"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-loadbalancer-sg"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGVPCAppSG":{
-      "Type":"AWS::EC2::SecurityGroup",
-      "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCNATSG","STGVPCLBSG"],
-      "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "GroupDescription":"STG VPC App Security Group.",
-        "GroupName":"STG-VPC-App-SG",
-        "SecurityGroupIngress":[
-          {"IpProtocol":"tcp","FromPort":22,"ToPort":22,"SourceSecurityGroupId":{"Ref":"STGVPCNATSG"}},
-          {"IpProtocol":"tcp","FromPort":5000,"ToPort":5000,"SourceSecurityGroupId":{"Ref":"STGVPCLBSG"}}
-        ],
-        "SecurityGroupEgress":[
-          {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
-        ],
-        "Tags":[
-          {"Key":"Name","Value":"STG-VPC-App-SG"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
-        ]
-      }
-    },
-    "STGVPCRedisSG":{
-      "Type":"AWS::EC2::SecurityGroup",
-      "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCNATSG","STGVPCAppSG"],
-      "Properties":{
-        "VpcId":{"Ref":"STGVPC"},
-        "GroupDescription":"STG VPC Redis Security Group.",
-        "GroupName":"STG-VPC-Redis-SG",
-        "SecurityGroupIngress":[
-          {"IpProtocol":"tcp","FromPort":22,"ToPort":22,"SourceSecurityGroupId":{"Ref":"STGVPCNATSG"}},
-          {"IpProtocol":"tcp","FromPort":6379,"ToPort":6379,"SourceSecurityGroupId":{"Ref":"STGVPCAppSG"}}
-        ],
-        "SecurityGroupEgress":[
-          {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
-        ],
-        "Tags":[
-          {"Key":"Name","Value":"STG-VPC-Redis-SG"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
-        ]
-      }
-    },
-    "STGVPCS3EP":{
-      "Type":"AWS::EC2::VPCEndpoint",
-      "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGVPCRTTPVT"],
-      "Properties":{
-        "RouteTableIds":[{"Ref":"STGVPCRTTPVT"}],
-        "ServiceName":{"Fn::Join":["",["com.amazonaws.",{"Ref":"AWS::Region"},".s3"]]},
-        "VpcEndpointType":"Gateway",
-        "VpcId":{"Ref":"STGVPC"}
-      }
-    },
-    "STGS3STTBKT":{
+    "S3AppSTTBKT":{
       "Type":"AWS::S3::Bucket",
       "Condition":"CheckENV",
       "Properties":{
@@ -480,7 +473,7 @@
             {"ServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}
           ]
         },
-        "BucketName":{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},
+        "BucketName":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},{"Ref":"ENV"},"s3-app-stt-bkt"]]},
         "PublicAccessBlockConfiguration":{
           "BlockPublicAcls":true,
           "BlockPublicPolicy":true,
@@ -500,112 +493,57 @@
           ]
         },
         "Tags":[
-          {"Key":"Name","Value":"STG-S3-STT-BKT"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},{"Ref":"ENV"},"s3-app-stt-bkt"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGS3STTVPCACSSPT":{
-      "Type":"AWS::S3::AccessPoint",
-      "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGS3STTBKT"],
-      "Properties":{
-        "Bucket":{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},
-        "Name":"stg-s3-stt-vpc-acss-pt",
-        "NetworkOrigin":"VPC",
-        "PublicAccessBlockConfiguration":{
-          "BlockPublicAcls":true,
-          "BlockPublicPolicy":true,
-          "IgnorePublicAcls":true,
-          "RestrictPublicBuckets":true
-        },
-        "VpcConfiguration":{
-          "VpcId":{"Ref":"STGVPC"}
-        }
-      }
-    },
-    "STGS3STTINTACSSPT":{
-      "Type":"AWS::S3::AccessPoint",
-      "Condition":"CheckENV",
-      "DependsOn":["STGVPC","STGS3STTBKT"],
-      "Properties":{
-        "Bucket":{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},
-        "Name":"stg-s3-stt-int-acss-pt",
-        "NetworkOrigin":"Internet",
-        "Policy":{
-          "Version":"2012-10-17",
-          "Statement":[
-            {
-              "Sid":"001",
-              "Effect":"Allow",
-              "Principal":{
-                "AWS":{"Fn::Join":[":",["arn:aws:iam:",{"Ref":"AWS::AccountId"},"user/tuto"]]}
-              },
-              "Action":[
-                "s3:GetObject",
-                "s3:ListBucket"
-              ],
-              "Resource":[
-                {"Fn::Join":[":",["arn:aws:s3:us-west-2",{"Ref":"AWS::AccountId"},"accesspoint/stg-s3-stt-int-acss-pt"]]},
-                {"Fn::Join":[":",["arn:aws:s3:us-west-2",{"Ref":"AWS::AccountId"},"accesspoint/stg-s3-stt-int-acss-pt/object/*"]]}
-              ]
-            }
-          ]
-        },
-        "PublicAccessBlockConfiguration":{
-          "BlockPublicAcls":true,
-          "BlockPublicPolicy":true,
-          "IgnorePublicAcls":true,
-          "RestrictPublicBuckets":true
-        }
-      }
-    },
-    "STGCFSTTOAI":{
-      "Type":"AWS::CloudFront::CloudFrontOriginAccessIdentity",
-      "Condition":"CheckENV",
-      "Properties":{
-        "CloudFrontOriginAccessIdentityConfig":{
-          "Comment":"STG CloudFront Static Origin Access Identity."
-        }
-      }
-    },
-    "STGS3STTBKTPLCY":{
+    "S3AppSTTBKTPLCY":{
       "Type":"AWS::S3::BucketPolicy",
       "Condition":"CheckENV",
-      "DependsOn":["STGS3STTBKT","STGCFSTTOAI"],
+      "DependsOn":["S3AppSTTBKT","CloudFrontAppOAI"],
       "Properties":{
-        "Bucket":{"Ref":"STGS3STTBKT"},
+        "Bucket":{"Ref":"S3AppSTTBKT"},
         "PolicyDocument":{
           "Statement":[
             {
               "Sid":001,
               "Effect":"Allow",
               "Principal":{
-                "CanonicalUser":{"Fn::GetAtt": ["STGCFSTTOAI","S3CanonicalUserId"]}
+                "CanonicalUser":{"Fn::GetAtt": ["CloudFrontAppOAI","S3CanonicalUserId"]}
               },
               "Action":["s3:GetObject"],
-              "Resource":{"Fn::Join":["",["arn:aws:s3:::",{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt"]]},"/*"]]}
+              "Resource":{"Fn::Join":["",["arn:aws:s3:::",{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},{"Ref":"ENV"},"s3-app-stt-bkt"]]},"/*"]]}
             }
           ]
         }
       }
     },
-    "STGCFSTTDST":{
+    "CloudFrontAppOAI":{
+      "Type":"AWS::CloudFront::CloudFrontOriginAccessIdentity",
+      "Condition":"CheckENV",
+      "Properties":{
+        "CloudFrontOriginAccessIdentityConfig":{
+          "Comment":"CloudFront App Origin Access Identity."
+        }
+      }
+    },
+    "CloudFrontAppSTTDST":{
       "Type":"AWS::CloudFront::Distribution",
       "Condition":"CheckENV",
-      "DependsOn":["STGS3STTBKT","STGCFSTTOAI","STGS3STTBKTPLCY"],
+      "DependsOn":["S3AppSTTBKT","CloudFrontAppOAI"],
       "Properties":{
         "DistributionConfig":{
-          "Comment":"STG CloudFront Static Distribution.",
+          "Comment":"CloudFront Static Distribution.",
           "Origins":[
             {
-              "DomainName":{"Fn::Join":["-",[{"Ref":"STGS3STTBKTPFX"},"stg-s3-stt-bkt.s3.amazonaws.com"]]},
-              "Id":{"Fn::Join":["-",["S3",{"Ref":"STGS3STTBKT"}]]},
+              "DomainName":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},{"Ref":"ENV"},"s3-stt-bkt.s3.amazonaws.com"]]},
+              "Id":{"Fn::Join":["-",["S3",{"Ref":"S3AppSTTBKT"}]]},
               "S3OriginConfig":{
                 "OriginAccessIdentity":{
-                  "Fn::Join":["/",["origin-access-identity","cloudfront",{"Ref":"STGCFSTTOAI"}]]
+                  "Fn::Join":["/",["origin-access-identity","cloudfront",{"Ref":"CloudFrontAppOAI"}]]
                 }
               }
             }
@@ -618,7 +556,7 @@
             "MaxTTL" :31536000,
             "MinTTL":0,
             "SmoothStreaming":false,
-            "TargetOriginId":{"Fn::Join":["-",["S3",{"Ref":"STGS3STTBKT"}]]},
+            "TargetOriginId":{"Fn::Join":["-",["S3",{"Ref":"S3AppSTTBKT"}]]},
             "ViewerProtocolPolicy":"allow-all",
             "ForwardedValues":{
               "QueryString":false,
@@ -632,49 +570,75 @@
           "PriceClass":"PriceClass_All"
         },
         "Tags":[
-          {"Key":"Name","Value":"STG-CF-STT-DST"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-cloud-front-app-stt-dst"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     },
-    "STGEC2NATSR1":{
+    "EC2NATSR1":{
       "Type":"AWS::EC2::Instance",
       "Condition":"CheckENV",
-      "DependsOn":["STGIAMEC2RLINSTPF","STGVPC","STGVPCNATSN2","STGVPCNATSG"],
+      "DependsOn":["IAMEC2RLINSTPF","VPCNET","VPCNATSN2","VPCNATSG"],
       "Properties":{
-        "AvailabilityZone":{"Fn::FindInMap":["VPCSNCONF","NATSN2","AZ"]},
+        "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "CreditSpecification":{"CPUCredits":"standard"},
         "DisableApiTermination":false,
         "EbsOptimized":false,
-        "IamInstanceProfile":{"Ref":"STGIAMEC2RLINSTPF"},
-        "ImageId":{"Fn::FindInMap":["EC2AMICONF","NAT","Id"]},
+        "IamInstanceProfile":{"Ref":"IAMEC2RLINSTPF"},
+        "ImageId":"ami-0a4bc8a5c1ed3b5a3",
         "InstanceInitiatedShutdownBehavior":"stop",
-        "InstanceType":"t2.micro",
-        "KeyName":{"Ref":"STGEC2KeyPair"},
+        "InstanceType":"t3a.micro",
+        "KeyName":{"Ref":"EC2KeyPair"},
         "NetworkInterfaces":[{
           "AssociatePublicIpAddress":true,
           "DeleteOnTermination":true,
           "DeviceIndex":"0",
-          "GroupSet":[{"Ref":"STGVPCNATSG"}],
-          "SubnetId":{"Ref":"STGVPCNATSN2"},
-          "PrivateIpAddress":"10.2.6.10"
+          "GroupSet":[{"Ref":"VPCNATSG"}],
+          "SubnetId":{"Ref":"VPCNATSN2"},
+          "PrivateIpAddress":"11.1.6.10"
         }],
         "SourceDestCheck":false,
         "Tenancy":"default",
         "Tags":[
-          {"Key":"Name","Value":"STG-EC2-NAT-SR-1"},
-          {"Key":"Environment","Value":"STG"},
-          {"Key":"Region","Value":"us-west-2"},
-          {"Key":"Product","Value":"CRM"}
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-vpc-nat-sr-1"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
+        ]
+      }
+    },
+    "EC2AppTG":{
+      "Type":"AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Condition":"CheckENV",
+      "DependsOn":["VPCNET"],
+      "Properties":{
+        "Name":{"Fn::Join":["",[{"Ref":"ENV"},"-ec2-app-tg"]]},
+        "Port":5000,
+        "Protocol":"HTTP",
+        "TargetType":"instance",
+        "UnhealthyThresholdCount":3,
+        "VpcId":{"Ref":"VPCNET"},
+        "HealthCheckEnabled":true,
+        "HealthCheckIntervalSeconds":30,
+        "HealthCheckPath":"/Health",
+        "HealthCheckPort":"5000",
+        "HealthCheckProtocol":"HTTP",
+        "HealthCheckTimeoutSeconds":10,
+        "HealthyThresholdCount":3,
+        "Tags" : [
+          {"Key":"Name","Value":{"Fn::Join":["",[{"Ref":"ENV"},"-ec2-app-tg"]]}},
+          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Region","Value":{"Ref":"AWS::Region"}},
+          {"Key":"Product","Value":"crm"}
         ]
       }
     }
   },
   "Outputs":{
-    "STGCFSTTDSTUrl":{
-      "Value":{"Fn::GetAtt":["STGCFSTTDST","DomainName"]}
+    "CloudFrontAppSTTDSTDomain":{
+      "Value":{"Fn::GetAtt":["CloudFrontAppSTTDST","DomainName"]}
     }
   }
 }
