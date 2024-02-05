@@ -9,9 +9,15 @@
     "Tenancy":"default"
   },
   "EbsOptimized":false,
-  "SecurityGroups":[
-    "crm-vpc-bastion-sg"
-  ],
+  "NetworkInterfaces":[{
+    "AssociatePublicIpAddress":true,
+    "DeleteOnTermination":true,
+    "DeviceIndex":0,
+    "InterfaceType":"interface",
+    "Groups":[
+      "${AMAZON_VPC_SECURITY_GROUP_ID}"
+    ]
+  }],
   "PrivateDnsNameOptions":{
     "HostnameType":"ip-name"
   },

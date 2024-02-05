@@ -10,9 +10,15 @@
     "GroupName":"crm-ec2-nginx-pg"
   },
   "EbsOptimized":false,
-  "SecurityGroups":[
-    "crm-vpc-nginx-sg"
-  ],
+  "NetworkInterfaces":[{
+    "AssociatePublicIpAddress":false,
+    "DeleteOnTermination":true,
+    "DeviceIndex":0,
+    "InterfaceType":"interface",
+    "Groups":[
+      "${AMAZON_VPC_SECURITY_GROUP_ID}"
+    ]
+  }],
   "PrivateDnsNameOptions":{
     "HostnameType":"ip-name"
   },

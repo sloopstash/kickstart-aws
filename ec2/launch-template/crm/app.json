@@ -10,9 +10,15 @@
     "GroupName":"crm-ec2-app-pg"
   },
   "EbsOptimized":false,
-  "SecurityGroups":[
-    "crm-vpc-app-sg"
-  ],
+  "NetworkInterfaces":[{
+    "AssociatePublicIpAddress":false,
+    "DeleteOnTermination":true,
+    "DeviceIndex":0,
+    "InterfaceType":"interface",
+    "Groups":[
+      "${AMAZON_VPC_SECURITY_GROUP_ID}"
+    ]
+  }],
   "PrivateDnsNameOptions":{
     "HostnameType":"ip-name"
   },
