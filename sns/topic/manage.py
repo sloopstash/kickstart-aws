@@ -12,7 +12,7 @@ import argparse
 import boto3
 
 # Initialize SNS client.
-SNS = boto3.client('sns',region_name='us-west-2')
+SNS = boto3.client('sns',region_name='ap-south-1')
 
 # Parse CLI arguments.
 cli = argparse.ArgumentParser(description='A CLI to manage SNS topics.')

@@ -12,7 +12,7 @@ import argparse
 import boto3
 
 # Initialize SES client.
-SES = boto3.client('ses',region_name='us-west-2')
+SES = boto3.client('ses',region_name='ap-south-1')
 
 # Parse CLI arguments.
 cli = argparse.ArgumentParser(description='A CLI to manage SES identities.')
