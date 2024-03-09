@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 ##
 ##
-# Manage MySQL tables.
+# Manage MySQL tables
 ##
 
 # Import community modules.
@@ -20,7 +20,7 @@ def parse_json(Filename):
   return Content
 
 # Load configuration.
-config = parse_json('rds/conf/main.conf')
+config = parse_json('crm/app/conf/mysql.conf')
 
 # Initialize MySQL connection.
 connection = create_engine(
@@ -32,7 +32,7 @@ connection.execution_options(autocommit=False)
 
 # Create MySQL tables.
 def create_tables():
-  with open('rds/instance/mysql/table/schema.sql') as file:
+  with open('crm/app/script/mysql/schema/main.sql') as file:
     sql = file.read()
     queries = sql.split(';')
     for query in queries:

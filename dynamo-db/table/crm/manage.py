@@ -25,8 +25,8 @@ def parse_json(Filename):
 decimal_to_int_converter = lambda x: int(x) if isinstance(x,decimal.Decimal) else x
 
 # Load configuration.
-config = parse_json('dynamo-db/conf/main.conf')
-schema = parse_json('dynamo-db/table/schema.json')
+config = parse_json('crm/app/conf/aws/dynamo-db.conf')
+schema = parse_json('dynamo-db/schema/crm/main.json')
 
 # Initialize DynamoDB client.
 DynamoDB = boto3.resource('dynamodb',region_name=config['region'],endpoint_url=config['endpoint'])

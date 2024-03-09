@@ -22,8 +22,8 @@ def parse_json(Filename):
   return Content
 
 # Load configuration.
-config = parse_json('rds/conf/main.conf')
-dataset = parse_json('rds/data/crm.json')
+config = parse_json('crm/app/conf/mysql.conf')
+dataset = parse_json('crm/data/main.json')
 
 # Initialize MySQL connection.
 connection = create_engine(
