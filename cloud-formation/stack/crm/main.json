@@ -80,8 +80,8 @@
       "DependsOn":["CRMIAMEC2RL"],
       "Properties":{
         "InstanceProfileName":"crm-iam-ec2-rl-inst-pf",
-        "Path":"/",
-        "Roles":[{"Ref":"CRMIAMEC2RL"}]
+        "Roles":[{"Ref":"CRMIAMEC2RL"}],
+        "Path":"/"
       }
     },
     "CRMVPCNET":{
@@ -546,7 +546,7 @@
         "GroupDescription":"CRM VPC NAT security group.",
         "VpcId":{"Ref":"CRMVPCNET"},
         "SecurityGroupIngress":[
-          {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
+          {"IpProtocol":"-1","CidrIp":{"Fn::If":["IsPRD","11.1.0.0/16","12.1.0.0/16"]}}
         ],
         "SecurityGroupEgress":[
           {"IpProtocol":"-1","CidrIp":"0.0.0.0/0"}
@@ -645,10 +645,10 @@
           "DefaultCacheBehavior":{
             "AllowedMethods":["GET","HEAD"],
             "CachedMethods":["GET","HEAD"],
-            "Compress":false,
+            "Compress":true,
             "DefaultTTL":86400,
-            "MaxTTL" :31536000,
             "MinTTL":0,
+            "MaxTTL" :31536000,
             "SmoothStreaming":false,
             "TargetOriginId":{"Fn::Join":["-",["S3",{"Ref":"CRMS3AppSTTBKT"}]]},
             "ViewerProtocolPolicy":"allow-all",
