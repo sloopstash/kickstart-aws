@@ -5,7 +5,7 @@
     "AWS::CloudFormation::Interface":{
       "ParameterGroups":[{
         "Label":{"default":"Main configuration"},
-        "Parameters":["ENV","SSHPublicKey"]
+        "Parameters":["Environment","SSHPublicKey"]
       },{
         "Label":{"default":"Amazon S3 configuration"},
         "Parameters":["S3BucketPrefix"]
@@ -14,7 +14,7 @@
         "Parameters":["EC2AMIID"]
       }],
       "ParameterLabels":{
-        "ENV":{"default":"Environment"},
+        "Environment":{"default":"Environment"},
         "SSHPublicKey":{"default":"SSH public key"},
         "S3BucketPrefix":{"default":"S3 bucket prefix"},
         "EC2AMIID":{"default":"EC2 AMI identifier"}
@@ -22,7 +22,7 @@
     }
   },
   "Parameters":{
-    "ENV":{
+    "Environment":{
       "Type":"String",
       "Default":"prd",
       "AllowedValues":["prd","stg"],
@@ -43,7 +43,7 @@
     }
   },
   "Conditions":{
-    "IsPRD":{"Fn::Equals":[{"Ref":"ENV"},"prd"]}
+    "IsPRD":{"Fn::Equals":[{"Ref":"Environment"},"prd"]}
   },
   "Resources":{
     "CRMIAMEC2RL":{
@@ -69,7 +69,7 @@
         "Path":"/",
         "Tags":[
           {"Key":"Name","Value":"crm-iam-ec2-rl"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Organization","Value":"sloopstash"}
         ]
@@ -93,7 +93,7 @@
         "InstanceTenancy":"default",
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-net"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -106,7 +106,7 @@
       "Properties":{
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-ig"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -128,7 +128,7 @@
         "VpcId":{"Ref":"CRMVPCNET"},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-pub-rtt"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -151,7 +151,7 @@
         "VpcId":{"Ref":"CRMVPCNET"},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-pvt-rtt"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -167,7 +167,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-redis-sn-1"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -191,7 +191,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-redis-sn-2"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -215,7 +215,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-app-sn-1"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -239,7 +239,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-app-sn-2"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -263,7 +263,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-nginx-sn-1"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -287,7 +287,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-nginx-sn-2"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -311,7 +311,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-bastion-sn-1"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -335,7 +335,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-bastion-sn-2"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -359,7 +359,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-nat-sn-1"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -383,7 +383,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-nat-sn-2"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -407,7 +407,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"a"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-loadbalancer-sn-1"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -431,7 +431,7 @@
         "AvailabilityZone":{"Fn::Join":["",[{"Ref":"AWS::Region"},"b"]]},
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-loadbalancer-sn-2"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -462,7 +462,7 @@
         ],
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-redis-sg"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -486,7 +486,7 @@
         ],
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-app-sg"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -509,7 +509,7 @@
         ],
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-nginx-sg"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -531,7 +531,7 @@
         ],
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-bastion-sg"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -553,7 +553,7 @@
         ],
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-nat-sg"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -575,7 +575,7 @@
         ],
         "Tags":[
           {"Key":"Name","Value":"crm-vpc-loadbalancer-sg"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -585,7 +585,7 @@
     "CRMS3AppSTTBKT":{
       "Type":"AWS::S3::Bucket",
       "Properties":{
-        "BucketName":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},"sloopstash",{"Ref":"ENV"},"crm-s3-app-stt-bkt"]]},
+        "BucketName":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},"sloopstash",{"Ref":"Environment"},"crm-s3-app-stt-bkt"]]},
         "AccessControl":"Private",
         "BucketEncryption":{
           "ServerSideEncryptionConfiguration":[
@@ -611,8 +611,8 @@
           ]
         },
         "Tags":[
-          {"Key":"Name","Value":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},"sloopstash",{"Ref":"ENV"},"crm-s3-app-stt-bkt"]]}},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Name","Value":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},"sloopstash",{"Ref":"Environment"},"crm-s3-app-stt-bkt"]]}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -634,7 +634,7 @@
         "DistributionConfig":{
           "Comment":"CRM CloudFront App static distribution.",
           "Origins":[{
-            "DomainName":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},"sloopstash",{"Ref":"ENV"},"crm-s3-stt-bkt.s3.amazonaws.com"]]},
+            "DomainName":{"Fn::Join":["-",[{"Ref":"S3BucketPrefix"},"sloopstash",{"Ref":"Environment"},"crm-s3-stt-bkt.s3.amazonaws.com"]]},
             "Id":{"Fn::Join":["-",["S3",{"Ref":"CRMS3AppSTTBKT"}]]},
             "S3OriginConfig":{
               "OriginAccessIdentity":{
@@ -665,7 +665,7 @@
         },
         "Tags":[
           {"Key":"Name","Value":"crm-cloud-front-app-stt-dst"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Organization","Value":"sloopstash"}
         ]
@@ -679,7 +679,7 @@
         "PublicKeyMaterial":{"Ref":"SSHPublicKey"},
         "Tags":[
           {"Key":"Name","Value":"crm-ec2-key-pair"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
@@ -709,7 +709,7 @@
         "Tenancy":"default",
         "Tags":[
           {"Key":"Name","Value":"crm-ec2-bastion-inst-1"},
-          {"Key":"Environment","Value":{"Ref":"ENV"}},
+          {"Key":"Environment","Value":{"Ref":"Environment"}},
           {"Key":"Stack","Value":"crm"},
           {"Key":"Region","Value":{"Ref":"AWS::Region"}},
           {"Key":"Organization","Value":"sloopstash"}
