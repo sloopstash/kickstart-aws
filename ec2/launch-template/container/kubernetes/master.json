@@ -1,13 +1,14 @@
 {
   "ImageId":"${AMAZON_EC2_AMI_ID}",
-  "InstanceType":"t3a.micro",
-  "KeyName":"crm-ec2-key-pair",
+  "InstanceType":"t3a.small",
+  "KeyName":"ec2-rsa-kp",
   "IamInstanceProfile":{
-    "Arn":"arn:aws:iam::${AWS_ACCOUNT_ID}:instance-profile/crm-iam-ec2-rl"
+    "Arn":"arn:aws:iam::${AWS_ACCOUNT_ID}:instance-profile/iam-ec2-rl"
   },
   "Placement":{
     "Tenancy":"default",
-    "GroupName":"crm-ec2-app-pg"
+    "GroupName":"container-s2-ec2-kubernetes-pg",
+    "PartitionNumber":2
   },
   "EbsOptimized":false,
   "NetworkInterfaces":[{

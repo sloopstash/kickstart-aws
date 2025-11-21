@@ -1,4 +1,0 @@
-<BUCKET_PREFIX>-crm-s3-app-log-bkt,stderr.log
-<BUCKET_PREFIX>-crm-s3-app-log-bkt,stdout.log
-<BUCKET_PREFIX>-crm-s3-app-log-bkt,nginx/access.log
-<BUCKET_PREFIX>-crm-s3-app-log-bkt,nginx/error.log

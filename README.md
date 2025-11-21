@@ -1,9 +1,8 @@
-# Kickstart AWS
-Create and manage highly customized resources in the AWS cloud infrastructure using AWS CLI, AWS SDK, and AWS CloudFormation.
+# SloopStash AWS kit
 
 
 ## Getting started
-Please refer to the [wiki](https://github.com/sloopstash/kickstart-aws/wiki) for detailed instructions on how to get started with our AWS starter-kit.
+Please refer to the [documentation](https://sloopstash.com/documentation/toolkit/cloud/aws/index.html) for detailed instructions on how to get started with SloopStash AWS kit.
 
 
 ## Get support

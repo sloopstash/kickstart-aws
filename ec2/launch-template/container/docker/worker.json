@@ -1,16 +1,28 @@
 {
   "ImageId":"${AMAZON_EC2_AMI_ID}",
-  "InstanceType":"t3a.micro",
-  "KeyName":"crm-ec2-key-pair",
+  "InstanceType":"t3a.small",
+  "KeyName":"ec2-rsa-kp",
   "IamInstanceProfile":{
-    "Arn":"arn:aws:iam::${AWS_ACCOUNT_ID}:instance-profile/crm-iam-ec2-rl"
+    "Arn":"arn:aws:iam::${AWS_ACCOUNT_ID}:instance-profile/iam-ec2-rl"
   },
   "Placement":{
-    "Tenancy":"default"
+    "Tenancy":"default",
+    "GroupName":"container-s1-ec2-docker-pg",
+    "PartitionNumber":2
   },
-  "EbsOptimized":false,
+  "EbsOptimized":true,
+  "BlockDeviceMappings":[{
+    "DeviceName":"/dev/sdb",
+    "Ebs":{
+      "VolumeSize":10,
+      "VolumeType":"gp3",
+      "Encrypted":true,
+      "KmsKeyId":"${AWS_KMS_KEY_ID}",
+      "DeleteOnTermination":true
+    }
+  }],
   "NetworkInterfaces":[{
-    "AssociatePublicIpAddress":true,
+    "AssociatePublicIpAddress":false,
     "DeleteOnTermination":true,
     "DeviceIndex":0,
     "InterfaceType":"interface",

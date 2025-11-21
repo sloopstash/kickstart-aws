@@ -1,0 +1,7 @@
+<BUCKET_PREFIX>-sloopstash-stg-aia-s3-log-bkt,redis/2025-11-15/server.log
+<BUCKET_PREFIX>-sloopstash-stg-aia-s3-log-bkt,chroma/2025-11-15/server.log
+<BUCKET_PREFIX>-sloopstash-stg-aia-s3-log-bkt,ollama/2025-11-15/access.log
+<BUCKET_PREFIX>-sloopstash-stg-aia-s3-log-bkt,app/2025-11-15/stdout.log
+<BUCKET_PREFIX>-sloopstash-stg-aia-s3-log-bkt,app/2025-11-15/stderr.log
+<BUCKET_PREFIX>-sloopstash-stg-aia-s3-log-bkt,nginx/2025-11-15/access.log
+<BUCKET_PREFIX>-sloopstash-stg-aia-s3-log-bkt,nginx/2025-11-15/error.log
