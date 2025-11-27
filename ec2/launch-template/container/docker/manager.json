@@ -1,6 +1,6 @@
 {
   "ImageId":"${AMAZON_EC2_AMI_ID}",
-  "InstanceType":"t3a.micro",
+  "InstanceType":"t3.micro",
   "KeyName":"ec2-rsa-kp",
   "IamInstanceProfile":{
     "Arn":"arn:aws:iam::${AWS_ACCOUNT_ID}:instance-profile/iam-ec2-rl"
